@@ -1,0 +1,32 @@
+# ansible/inventories/aws_ec2.yaml
+plugin: amazon.aws.aws_ec2
+regions:
+  - us-east-1
+  - us-east-2
+
+# Filter by tags
+filters:
+  instance-state-name: running
+  tag:Environment:
+    - dev
+    - test
+    - prod
+
+# Keyed groups for organization
+keyed_groups:
+  - key: tags.Name
+    prefix: tag
+  - key: tags.Role
+    prefix: role
+  - key: environment
+    prefix: env
+
+# Host variables
+hostnames:
+  - dns-name
+  - private-dns-name
+
+# Compose additional variables
+compose:
+  ansible_host: public_ip_address
+  ansible_user: "'ubuntu'"

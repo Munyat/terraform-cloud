@@ -1,0 +1,36 @@
+# ansible/playbooks/deploy-wordpress.yml
+---
+- name: Configure WordPress servers
+  hosts: role_wordpress
+  become: yes
+  gather_facts: yes
+
+  vars_files:
+    - ../group_vars/all.yml
+    - ../group_vars/webservers.yml
+
+  vars:
+    wp_db_host: "{{ lookup('env', 'RDS_ENDPOINT') }}"
+    wp_db_password: "{{ lookup('env', 'WP_DB_PASSWORD') }}"
+
+  pre_tasks:
+    - name: Display target hosts
+      debug:
+        msg: "Configuring WordPress on {{ inventory_hostname }}"
+
+  roles:
+    - common
+    - wordpress
+
+  post_tasks:
+    - name: Verify Apache is running
+      uri:
+        url: "http://localhost/health"
+        method: GET
+        status_code: 200
+      register: health_check
+      failed_when: health_check.status != 200
+
+    - name: Display health check result
+      debug:
+        msg: "WordPress health check passed on {{ inventory_hostname }}"

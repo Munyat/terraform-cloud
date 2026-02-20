@@ -1,0 +1,12 @@
+# ansible/templates/ntp.conf.j2
+# Managed by Ansible
+{% for server in ntp_servers %}
+server {{ server }} iburst
+{% endfor %}
+
+restrict -4 default kod notrap nomodify nopeer noquery
+restrict -6 default kod notrap nomodify nopeer noquery
+restrict 127.0.0.1
+restrict ::1
+
+driftfile /var/lib/ntp/ntp.drift

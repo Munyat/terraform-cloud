@@ -1,0 +1,39 @@
+# ansible/playbooks/site.yml
+---
+- name: Apply common configuration to all servers
+  hosts: all
+  become: yes
+  roles:
+    - common
+
+- name: Configure Nginx servers
+  hosts: role_nginx
+  become: yes
+  roles:
+    - nginx
+  tags:
+    - nginx
+
+- name: Configure WordPress servers
+  hosts: role_wordpress
+  become: yes
+  roles:
+    - wordpress
+  tags:
+    - wordpress
+
+- name: Configure bastion hosts
+  hosts: role_bastion
+  become: yes
+  roles:
+    - bastion
+  tags:
+    - bastion
+
+- name: Configure tooling application servers
+  hosts: role_tooling
+  become: yes
+  roles:
+    - tooling
+  tags:
+    - tooling

@@ -1,0 +1,22 @@
+# ansible/roles/nginx/templates/site.conf.j2
+server {
+    listen {{ nginx_port | default(80) }};
+    server_name _;
+    
+    root {{ web_root | default('/var/www/html') }};
+    index index.html index.htm;
+    
+    location / {
+        try_files $uri $uri/ =404;
+    }
+    
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+    
+    location ~ /\.ht {
+        deny all;
+    }
+}

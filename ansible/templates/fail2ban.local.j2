@@ -1,0 +1,18 @@
+# ansible/templates/fail2ban.local.j2
+[DEFAULT]
+ignoreip = 127.0.0.1/8 ::1
+bantime = 3600
+findtime = 600
+maxretry = 5
+banaction = iptables-multiport
+destemail = root@localhost
+sendername = Fail2Ban
+action = %(action_mwl)s
+
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 86400

@@ -1,0 +1,7 @@
+# ansible/roles/common/defaults/main.yml
+---
+common_packages:
+  - curl
+  - wget
+  - htop
+  - git

@@ -1,0 +1,44 @@
+# ansible/playbooks/post-deployment.yml
+---
+- name: Post-deployment verification
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Check system uptime
+      command: uptime
+      register: uptime_result
+
+    - name: Display uptime
+      debug:
+        msg: "{{ uptime_result.stdout }}"
+
+    - name: Check disk space
+      command: df -h
+      register: disk_result
+
+    - name: Display disk space
+      debug:
+        msg: "{{ disk_result.stdout_lines }}"
+
+    - name: Check memory usage
+      command: free -h
+      register: memory_result
+
+    - name: Display memory usage
+      debug:
+        msg: "{{ memory_result.stdout_lines }}"
+
+    - name: Check service status
+      service_facts:
+
+    - name: Display critical service status
+      debug:
+        msg: "{{ item }} is {{ services[item].state }}"
+      loop:
+        - nginx
+        - apache2
+        - sshd
+        - fail2ban
+      when: item in services

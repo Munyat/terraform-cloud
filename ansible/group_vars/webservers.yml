@@ -1,0 +1,20 @@
+# ansible/group_vars/webservers.yml
+---
+# Web server specific variables
+web_root: /var/www/html
+web_user: www-data
+web_group: www-data
+
+# Nginx configuration
+nginx_port: 80
+nginx_worker_processes: auto
+nginx_worker_connections: 1024
+nginx_keepalive_timeout: 65
+
+# PHP configuration
+php_version: "8.1"
+php_memory_limit: "256M"
+php_max_execution_time: 300
+php_max_input_time: 300
+php_post_max_size: "32M"
+php_upload_max_filesize: "32M"

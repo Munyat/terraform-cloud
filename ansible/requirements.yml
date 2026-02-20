@@ -1,0 +1,18 @@
+# ansible/requirements.yml
+---
+# External roles from Ansible Galaxy
+roles:
+  - name: geerlingguy.nginx
+    version: 3.1.0
+  - name: geerlingguy.php
+    version: 4.1.0
+  - name: geerlingguy.mysql
+    version: 4.3.0
+  - name: geerlingguy.certbot
+    version: 5.0.0
+
+collections:
+  - name: community.general
+    version: 7.0.0
+  - name: amazon.aws
+    version: 5.0.0

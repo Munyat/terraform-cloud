@@ -1,0 +1,53 @@
+# ansible/roles/common/tasks/main.yml
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+- name: Install common packages
+  package:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Configure NTP
+  template:
+    src: ntp.conf.j2
+    dest: /etc/ntp.conf
+  notify: restart ntp
+  when: ntp_servers is defined
+
+- name: Start and enable NTP
+  service:
+    name: ntp
+    state: started
+    enabled: yes
+  when: ansible_os_family == "Debian"
+
+- name: Create admin users
+  user:
+    name: "{{ item.name }}"
+    groups: sudo
+    shell: /bin/bash
+    append: yes
+    ssh_key: "{{ item.ssh_key }}"
+  loop: "{{ admin_users }}"
+  when: item.ssh_key is defined and item.ssh_key != ""
+
+- name: Configure SSH for security
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: "^PermitRootLogin", line: "PermitRootLogin no" }
+    - { regexp: "^PasswordAuthentication", line: "PasswordAuthentication no" }
+    - { regexp: "^X11Forwarding", line: "X11Forwarding no" }
+    - { regexp: "^MaxAuthTries", line: "MaxAuthTries 3" }
+  notify: restart ssh
+
+- name: Set up log rotation
+  template:
+    src: logrotate.conf.j2
+    dest: /etc/logrotate.d/custom

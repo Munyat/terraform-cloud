@@ -1,0 +1,160 @@
+# ansible/playbooks/hardening.yml
+---
+- name: Apply security hardening to base image
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Check if ansible can be run here
+      stat:
+        path: /etc/no-ansible
+      register: no_ansible
+
+    - name: Verify we can run ansible
+      assert:
+        that:
+          - "not no_ansible.stat.exists"
+        success_msg: "We are able to run on this node"
+        fail_msg: "/etc/no-ansible exists - skipping run on this node"
+
+  tasks:
+    - name: Update system
+      apt:
+        update_cache: yes
+        upgrade: dist
+        autoremove: yes
+        autoclean: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install security packages
+      apt:
+        name:
+          - fail2ban
+          - ufw
+          - unattended-upgrades
+          - auditd
+          - aide
+          - rkhunter
+          - lynis
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Configure automatic security updates
+      copy:
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Download-Upgradeable-Packages "1";
+          APT::Periodic::AutocleanInterval "7";
+          APT::Periodic::Unattended-Upgrade "1";
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+
+    - name: Configure fail2ban
+      template:
+        src: fail2ban.local.j2
+        dest: /etc/fail2ban/jail.local
+      notify: restart fail2ban
+
+    - name: Configure UFW defaults
+      ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: "incoming", policy: "deny" }
+        - { direction: "outgoing", policy: "allow" }
+
+    - name: Allow SSH through firewall
+      ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    - name: Harden SSH configuration
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: "^#?PermitRootLogin", line: "PermitRootLogin no" }
+        - {
+            regexp: "^#?PasswordAuthentication",
+            line: "PasswordAuthentication no",
+          }
+        - { regexp: "^#?X11Forwarding", line: "X11Forwarding no" }
+        - { regexp: "^#?MaxAuthTries", line: "MaxAuthTries 3" }
+        - { regexp: "^#?ClientAliveInterval", line: "ClientAliveInterval 300" }
+        - { regexp: "^#?ClientAliveCountMax", line: "ClientAliveCountMax 0" }
+      notify: restart ssh
+
+    - name: Remove unnecessary packages
+      apt:
+        name:
+          - telnet
+          - rsh-server
+          - rsh-client
+          - talk
+          - nis
+          - yp-tools
+        state: absent
+
+    - name: Set file permissions
+      file:
+        path: "{{ item.path }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: /etc/passwd, mode: "0644" }
+        - { path: /etc/shadow, mode: "0640" }
+        - { path: /etc/group, mode: "0644" }
+        - { path: /etc/gshadow, mode: "0640" }
+        - { path: /etc/ssh/sshd_config, mode: "0600" }
+
+    - name: Configure kernel parameters
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        sysctl_set: yes
+        reload: yes
+      loop:
+        - { name: net.ipv4.ip_forward, value: "0" }
+        - { name: net.ipv4.conf.all.rp_filter, value: "1" }
+        - { name: net.ipv4.conf.default.rp_filter, value: "1" }
+        - { name: net.ipv4.conf.all.accept_source_route, value: "0" }
+        - { name: net.ipv6.conf.all.accept_source_route, value: "0" }
+        - { name: net.ipv4.conf.all.send_redirects, value: "0" }
+        - { name: net.ipv4.conf.default.send_redirects, value: "0" }
+
+    - name: Run AIDE initialization
+      command: aideinit
+      args:
+        creates: /var/lib/aide/aide.db.gz
+      when: ansible_os_family == "Debian"
+
+    - name: Secure shared memory
+      lineinfile:
+        path: /etc/fstab
+        line: "tmpfs /run/shm tmpfs defaults,noexec,nosuid 0 0"
+        create: yes
+
+  handlers:
+    - name: restart ssh
+      service:
+        name: sshd
+        state: restarted
+
+    - name: restart fail2ban
+      service:
+        name: fail2ban
+        state: restarted
+
+  post_tasks:
+    - name: Create ansible run marker
+      file:
+        path: /var/log/ansible-hardening.run
+        state: touch
+        mode: "0644"
+        owner: root
+        group: root

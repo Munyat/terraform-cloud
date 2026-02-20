@@ -1,0 +1,7 @@
+# ansible/roles/nginx/defaults/main.yml
+---
+nginx_port: 80
+nginx_worker_processes: auto
+nginx_worker_connections: 1024
+nginx_keepalive_timeout: 65
+web_root: /var/www/html

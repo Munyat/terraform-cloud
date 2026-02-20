@@ -1,0 +1,19 @@
+# ansible/roles/wordpress/templates/wordpress.conf.j2
+<VirtualHost *:{{ wp_port | default(80) }}>
+    ServerAdmin {{ wp_admin_email | default('webmaster@localhost') }}
+    DocumentRoot /var/www/wordpress
+    
+    <Directory /var/www/wordpress>
+        Options FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+    
+    # Health check endpoint
+    <Location /health>
+        SetHandler default-handler
+    </Location>
+</VirtualHost>

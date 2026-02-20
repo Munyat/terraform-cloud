@@ -1,0 +1,35 @@
+# ansible/group_vars/all.yml
+---
+# Global variables
+environment: "{{ lookup('env', 'ENVIRONMENT') | default('dev', true) }}"
+
+# AWS Region
+aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-east-1', true) }}"
+
+# NTP servers
+ntp_servers:
+  - 0.amazon.pool.ntp.org
+  - 1.amazon.pool.ntp.org
+
+# Admin users
+admin_users:
+  - name: "{{ lookup('env', 'ADMIN_USER') | default('admin', true) }}"
+    ssh_key: "{{ lookup('env', 'ADMIN_SSH_KEY') | default('', true) }}"
+
+# Logging
+remote_log_server: "{{ lookup('env', 'LOG_SERVER') | default('', true) }}"
+
+# Monitoring
+monitoring_enabled: "{{ environment == 'production' }}"
+
+# Packages common to all hosts
+common_packages:
+  - curl
+  - wget
+  - htop
+  - git
+  - unzip
+  - python3-pip
+  - python3-venv
+  - awscli
+  - cloud-init

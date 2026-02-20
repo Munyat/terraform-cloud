@@ -1,0 +1,32 @@
+# ansible/playbooks/deploy-nginx.yml
+---
+- name: Configure Nginx servers
+  hosts: role_nginx
+  become: yes
+  gather_facts: yes
+
+  vars_files:
+    - ../group_vars/all.yml
+    - ../group_vars/webservers.yml
+
+  pre_tasks:
+    - name: Display target hosts
+      debug:
+        msg: "Configuring Nginx on {{ inventory_hostname }}"
+
+  roles:
+    - common
+    - nginx
+
+  post_tasks:
+    - name: Verify Nginx is running
+      uri:
+        url: "http://localhost/health"
+        method: GET
+        status_code: 200
+      register: health_check
+      failed_when: health_check.status != 200
+
+    - name: Display health check result
+      debug:
+        msg: "Nginx health check passed on {{ inventory_hostname }}"
